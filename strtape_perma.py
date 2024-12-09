@@ -3,8 +3,6 @@ requests.packages.urllib3.disable_warnings(requests.packages.urllib3.exceptions.
 
 #https://api.streamtape.to/file/listfolder?login=<apiid>&key=<apipass>
 
-failure = False
-
 def list_folders():
     time.sleep(0.1)
     params = {
@@ -41,19 +39,19 @@ def list_files_in_folder(folderid):
 
 def delete_file(fileid):
     time.sleep(0.1)
-    global failure
     params = {  
         "login" : username,
         "key" : password,
         "file" : fileid
     }
     response = requests.get("https://api.streamtape.to/file/delete", params=params, verify=False)
-    if str(response.status_code) != "200":
-        failure = True
+    if str(response.status_code) == "200":
+        return True
+    else:
+        return False
     
 def remote_upload(remoteurl,folderid):
     time.sleep(0.1)
-    global failure
     params = {  
         "login" : username,
         "key" : password,
@@ -61,24 +59,26 @@ def remote_upload(remoteurl,folderid):
         "folder" : folderid
     }
     response = requests.get("https://api.streamtape.to/remotedl/add", params=params, verify=False)
-    if str(response.status_code) != "200":
-        failure = True
+    if str(response.status_code) == "200":
+        return True
+    else:
+        return False
 
 def main():
     for folder in list_folders():
-    #for folder in list_folders()[11:]:     #specify index of folder from which upload continues in case of failure
+    #for folder in list_folders()[11:]:     #specify index of folder from which upload continues in case of failure (consider the 'Remote','Subtitles','Thumbnails' folders when specifying)
         file_url_list, file_id_list = list_files_in_folder(folder)
         for file_url in file_url_list:
             print("Uploading: ",file_url)
-            remote_upload(file_url,folder)
-            if failure:
-                print(file_url)
+            upload_status = remote_upload(file_url,folder)
+            if upload_status == False:
+                print("FAILED AT: ",file_url)
                 break
         for file_id in file_id_list:
             print("Deleting: ",file_id)
-            delete_file(file_id)
-            if failure:
-                print(file_id)
+            download_status = delete_file(file_id)
+            if download_status == False:
+                print("FAILED AT: ",file_id)
                 break
 
             
